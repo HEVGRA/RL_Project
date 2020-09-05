@@ -14,7 +14,7 @@ from PIL import ImageFont
 from sklearn import preprocessing
 from collections import namedtuple
 
-file = open('Data\data_7.txt', 'r', encoding='UTF-8') 
+file = open('Data\data_10.txt', 'r', encoding='UTF-8') 
 line = file.readlines()
 
 num_node = int(line[0])
@@ -22,7 +22,7 @@ num_edge = int(line[1])
 num_agent = int(line[num_node + num_edge + 2])
 constraint = int(line[num_node + num_edge + num_agent + 3])
 maxspeed = 0 
-cost = 0
+Cost = 0
 # lists = "Model\saved_3f_dist_no"
 # lists = "Model\saved_3f_dist_2"
 lists = "Model\saved_"
@@ -52,6 +52,7 @@ class Agent:
         self.curedge_length = 0     
         self.step = 0
         self.speed = speed
+        self.cost = 0
         self.num = number
         self.historyaction = []
         self.reward = 0
@@ -218,7 +219,7 @@ def walking(ag):
 
 k = 10000
 while not all(edge_ALL[r].ox == 'o' for r in edge_ALL):
-    if cost > 1000000: break
+    if Cost > 1000000: break
     for ag in agent_ALL:
         ag.step += ag.speed
         while ag.curedge_length <= ag.step:  
@@ -231,20 +232,27 @@ while not all(edge_ALL[r].ox == 'o' for r in edge_ALL):
             node_ALL[ag.currnode].all_ag_here.remove(ag.num)       
             ag.currnode = ag.togonode
             node_ALL[ag.currnode].all_ag_here.append(ag.num)
-    cost += maxspeed
-    if cost > k:
-        print(cost)
+        ag.cost += ag.speed
+    Cost += maxspeed
+    if Cost > k:
+        print(Cost)
         k += 10000
 
-for i in agent_ALL:   print(i.historyaction)
-all_historyaction = -num_agent
-for i in agent_ALL:  all_historyaction += len(i.historyaction)
-print("Average Repeated rate = ","%.2f"%(((all_historyaction-num_edge)/all_historyaction)*100),"%")
-print("Average cost = ",cost)
-
+# Write all action to file
 fileforHistoryaction = "Animation/RL_"+ str(num_node) +".txt"
 f = open(fileforHistoryaction, "w")
 print(num_node, file = f)
 for i in agent_ALL: print(i.historyaction, file = f)
 
+# for i in agent_ALL:   print(i.historyaction)
+allEdgeCost = 0
+for i in edge_ALL:   allEdgeCost += edge_ALL[i].distance
+allAgentCost = 0
+for i in agent_ALL:   allAgentCost += i.cost
+all_historyaction = -num_agent
+for i in agent_ALL:  all_historyaction += len(i.historyaction)
 
+print("Map cost = ",allEdgeCost)
+print("All agents' cost = ",allAgentCost)
+print("Repeated rate = ","%.2f"%((all_historyaction-num_edge)/all_historyaction*100),"%")                      
+print("Largest cost = ",Cost)

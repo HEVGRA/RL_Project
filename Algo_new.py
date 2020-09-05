@@ -5,7 +5,7 @@ import time
 
 # tStart = time.time()
 
-file = open('Data\data_7.txt', 'r', encoding='UTF-8') 
+file = open('Data\data_10.txt', 'r', encoding='UTF-8') 
 line = file.readlines()
 
 num_node = int(line[0])
@@ -13,8 +13,7 @@ num_edge = int(line[1])
 num_agent = int(line[num_node + num_edge + 2])
 constraint = int(line[num_node + num_edge + num_agent + 3])
 maxspeed = 0 
-cost = 0
-all_historyaction = 0              
+Cost = 0              
 
 class Node:
     def __init__(self, pos, number):
@@ -41,6 +40,7 @@ class Agent:
         self.num = number
         self.historyaction = []
         self.start = cur
+        self.cost = 0
 
 node_ALL = []
 edge_ALL = {}
@@ -112,36 +112,38 @@ def initialize():
         a.togonode = a.start         
         a.curedge_length = 0 
         a.step = 0
-        a.random_cnt = 0
-        a.random_rate = 0
+        a.cost = 0
         a.historyaction = []
 
-testtime = 1
-bestcost = 10000000
 
-for te in range(testtime):
-    cost_temp = 0
-    initialize()                                 
-    while not all(edge_ALL[r].ox == 'o' for r in edge_ALL) :
-        for ag in agent_ALL:
-            ag.step += ag.speed
-            while ag.curedge_length <= ag.step:  walking(ag) 
-        cost += maxspeed
-        cost_temp += maxspeed
-    for ag in agent_ALL: ag.random_rate = ag.random_cnt/len(ag.historyaction)
-
-    all_historyaction -= 3
-    for i in agent_ALL:  all_historyaction += len(i.historyaction)
-
-for i in agent_ALL:   print(i.historyaction)  
-print("Average Repeated rate = ","%.2f"%((all_historyaction-num_edge*testtime)/all_historyaction*100),"%")                      
-print("Average cost = ",cost/(testtime))
-
-# tEnd = time.time()
-# print("It cost %f sec" % (tEnd - tStart))
-
+initialize()                                 
+while not all(edge_ALL[r].ox == 'o' for r in edge_ALL) :
+    for ag in agent_ALL:
+        ag.step += ag.speed
+        while ag.curedge_length <= ag.step:  walking(ag)
+        ag.cost += ag.speed
+    Cost += maxspeed
+# Write all action to file
 fileforHistoryaction = "Animation/Algo_"+ str(num_node) +".txt"
 f = open(fileforHistoryaction, "w")
 print(num_node, file = f)
 for i in agent_ALL: print(i.historyaction, file = f)
+
+
+allEdgeCost = 0
+for i in edge_ALL:   allEdgeCost += edge_ALL[i].distance
+allAgentCost = 0
+for i in agent_ALL:   allAgentCost += i.cost
+all_historyaction = -num_agent
+for i in agent_ALL:  all_historyaction += len(i.historyaction)
+
+# for i in agent_ALL:   print(i.historyaction)  
+print("Map cost = ",allEdgeCost)
+print("All agents' cost = ",allAgentCost)
+print("Repeated rate = ","%.2f"%((all_historyaction-num_edge)/all_historyaction*100),"%")                      
+print("Largest cost = ",Cost)
+
+# tEnd = time.time()
+# print("It cost %f sec" % (tEnd - tStart))
+
 

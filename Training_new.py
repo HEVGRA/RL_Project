@@ -185,14 +185,14 @@ class Replay_buffer():
 
 buffer = Replay_buffer(1000)
 batch_size = 32
-epsilon = 0.1  #
+epsilon = 0.3  #
 epsilon_decay = 0.0002  #
 epsilon_f = 0.1
 updateTargetModeltick = 0
 updateTargetModelthres = 10
 BatchTrainTick = 0
 BatchTrainThres = 300
-testtime = 50
+testtime = 100
 
 def pick_edge(ag):
     global BatchTrainTick

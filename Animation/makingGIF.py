@@ -4,7 +4,7 @@ import matplotlib.animation as animation
 from matplotlib.animation import FuncAnimation
 import math
  
-file_Algo = open('Animation\Algo_7.txt', 'r', encoding='UTF-8') 
+file_Algo = open('Animation\Algo_10.txt', 'r', encoding='UTF-8') 
 line_Algo = file_Algo.readlines()
 
 num_node = int(line_Algo[0])
