@@ -72,7 +72,8 @@ class Agent:
             self.edgeCountInfo.append(0)
         self.featureUpdate = []
         for i in range(num_agent): 
-            self.featureUpdate.append([])
+            j = set()
+            self.featureUpdate.append(j)
 
 node_ALL = []
 edge_ALL = {}
@@ -119,24 +120,6 @@ def find_edge(a,b):
     if tuple([a,b]) in edge_ALL:   return tuple([a,b])
     else: return tuple([b,a])
 
-# 相鄰矩陣
-A = np.empty((0, num_edge))
-for i in edge_ALL:
-    tmp_array = np.zeros((1, num_edge))
-    connected_node1_number = len(node_ALL[i[0]].connected_node)
-    for j in range(connected_node1_number):
-        tmp_edge = find_edge(i[0], node_ALL[i[0]].connected_node[j])
-        tmp_array[0][edge_ALL[tmp_edge].number] = 1
-
-    connected_node2_number = len(node_ALL[i[1]].connected_node)     
-    for j in range(connected_node2_number):
-        tmp_edge = find_edge(i[1], node_ALL[i[1]].connected_node[j])
-        tmp_array[0][edge_ALL[tmp_edge].number] = 1
-    
-    A = np.append(A, tmp_array, axis=0)
-for i in range(num_edge):
-    A[i][i] = 1
-
 # 特徵矩陣 (todo)
 num_feature = 3
 def feature_matrix(ag):
@@ -157,21 +140,20 @@ def update_info():
     for u in range(num_agent):
         for give in agent_ALL:
             for receive in agent_ALL:
-                if receive.currnode in node_ALL[give.currnode].in_commu_range and give != receive:
-                    for infomation in give.featureUpdate[receive.num]:
-                        feat = infomation[0]
-                        edge = infomation[1]
-                        content = infomation[2]
-                        if feat == 0:  receive.edgeLengthInfo[edge] = content
+                if receive.currnode in node_ALL[give.currnode].in_commu_range and give.num != receive.num:
+                    for infomation in set(give.featureUpdate[receive.num]):
+                        feat, edge = infomation
+                        if feat == 0:  receive.edgeLengthInfo[edge] = give.edgeLengthInfo[edge]
                         if feat == 1:  
-                            if receive.edgeTotalConnectInfo[edge] < content: receive.edgeTotalConnectInfo[edge] = content
+                            if receive.edgeTotalConnectInfo[edge] < give.edgeTotalConnectInfo[edge]: 
+                                receive.edgeTotalConnectInfo[edge] = give.edgeTotalConnectInfo[edge]
                         if feat == 2:  
-                            if receive.edgeCountInfo[edge] < content: receive.edgeCountInfo[edge] = content
+                            if receive.edgeCountInfo[edge] < give.edgeCountInfo[edge]: 
+                                receive.edgeCountInfo[edge] = give.edgeCountInfo[edge]
                     for i in range(num_agent): 
-                        if i != give.num and i != receive.num: receive.featureUpdate[i] += give.featureUpdate[receive.num]
+                        if i != give.num and i != receive.num: receive.featureUpdate[i] = receive.featureUpdate[i].union(give.featureUpdate[receive.num])
                     give.featureUpdate[receive.num].clear()
-                elif give == receive: give.featureUpdate[receive.num].clear()
- 
+                elif give.num == receive.num: give.featureUpdate[receive.num].clear()
 
 model = DQN(nfeat=num_feature)
 model.load_state_dict(torch.load(lists))
@@ -181,7 +163,6 @@ def pick_edge(ag):
     output = model(torch.from_numpy(X))
     outputnum = -1
     outputmax = -math.inf
-    Eps = random.uniform(0, 1)
     for i in range(num_node):
         if output[i] >= outputmax and i in node_ALL[ag.togonode].connected_node:
             outputmax = output[i]
@@ -193,7 +174,7 @@ def walking(ag):
         edge_ALL[find_edge(ag.currnode_ori, ag.togonode)].ox = 'o'
         ag.edgeLengthInfo[edge_ALL[ag.togoedge].number] = ag.curedge_length
         ag.alreadyVisitInfo[edge_ALL[ag.togoedge].number] = 1
-        for i in range(num_agent): ag.featureUpdate[i].append([0, edge_ALL[ag.togoedge].number, ag.curedge_length])
+        for i in range(num_agent): ag.featureUpdate[i].add(tuple([0, edge_ALL[ag.togoedge].number]))
     ag.currnode = ag.togonode
     ag.currnode_ori = ag.togonode
     ag.lastedge = ag.togoedge
@@ -211,32 +192,34 @@ def walking(ag):
         ag.edgeTotalConnectInfo[head] = sum(ag.edgeTotalConnectMap[head])
         ag.edgeTotalConnectInfo[tail] = sum(ag.edgeTotalConnectMap[tail])
         for i in range(num_agent): 
-            ag.featureUpdate[i].append([1, head, ag.edgeTotalConnectInfo[head]])
-            ag.featureUpdate[i].append([1, tail, ag.edgeTotalConnectInfo[tail]])
-    edge_ALL[find_edge(ag.currnode_ori, ag.togonode)].count += 1
-    ag.edgeCountInfo[edge_ALL[ag.togoedge].number] = edge_ALL[find_edge(ag.currnode_ori, ag.togonode)].count
-    for i in range(num_agent): ag.featureUpdate[i].append([2, edge_ALL[ag.togoedge].number, edge_ALL[find_edge(ag.currnode_ori, ag.togonode)].count])
+            ag.featureUpdate[i].add(tuple([1, head]))
+            ag.featureUpdate[i].add(tuple([1, tail]))
+    edge_ALL[ag.togoedge].count += 1
+    ag.edgeCountInfo[edge_ALL[ag.togoedge].number] = edge_ALL[ag.togoedge].count
+    for i in range(num_agent): ag.featureUpdate[i].add(tuple([2, edge_ALL[ag.togoedge].number]))
 
 k = 10000
 while not all(edge_ALL[r].ox == 'o' for r in edge_ALL):
-    if Cost > 1000000: break
+    if Cost > 100000: break
     for ag in agent_ALL:
         ag.step += ag.speed
+        ag.cost += ag.speed
         while ag.curedge_length <= ag.step:  
             update_info()
             node_ALL[ag.currnode].all_ag_here.remove(ag.num)
             walking(ag)         
             node_ALL[ag.currnode].all_ag_here.append(ag.num)
         if ag.step > ag.curedge_length/2:
-            update_info()
             node_ALL[ag.currnode].all_ag_here.remove(ag.num)       
             ag.currnode = ag.togonode
             node_ALL[ag.currnode].all_ag_here.append(ag.num)
-        ag.cost += ag.speed
+            update_info()
     Cost += maxspeed
     if Cost > k:
         print(Cost)
         k += 10000
+
+
 
 # Write all action to file
 fileforHistoryaction = "Animation/RL_"+ str(num_node) +".txt"
@@ -244,7 +227,7 @@ f = open(fileforHistoryaction, "w")
 print(num_node, file = f)
 for i in agent_ALL: print(i.historyaction, file = f)
 
-# for i in agent_ALL:   print(i.historyaction)
+for i in agent_ALL:   print(i.historyaction)
 allEdgeCost = 0
 for i in edge_ALL:   allEdgeCost += edge_ALL[i].distance
 allAgentCost = 0

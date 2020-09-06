@@ -104,8 +104,9 @@ for i in agent_ALL:
         k = i.historyaction[j]
         i.x.append(node_ALL[k].pos[0])
         i.y.append(node_ALL[k].pos[1])
-        if j != (len(i.historyaction)-1): 
+        if j < (len(i.historyaction)-1):
             i.distance.append(edge_ALL[find_edge(i.historyaction[j],i.historyaction[j+1])].distance)
+
 for i in agent_ALL: 
     allstep = len(i.historyaction)
     for j in i.distance: allstep += math.ceil(j/i.speed)

@@ -120,8 +120,8 @@ initialize()
 while not all(edge_ALL[r].ox == 'o' for r in edge_ALL) :
     for ag in agent_ALL:
         ag.step += ag.speed
-        while ag.curedge_length <= ag.step:  walking(ag)
         ag.cost += ag.speed
+        while ag.curedge_length <= ag.step:  walking(ag)
     Cost += maxspeed
 # Write all action to file
 fileforHistoryaction = "Animation/Algo_"+ str(num_node) +".txt"

@@ -1,7 +1,17 @@
-file_his = open('Historyaction.txt', 'r', encoding='UTF-8') 
-line_his = file_his.readlines()
-a = line_his[2]
-a = a.strip('[').strip('\n').strip(']').split(', ')
-for i in range(len(a)):
-    a[i] = int(a[i])
-    print(a[i])
+# x = set()
+# k = [x,x,x]
+# k[0].add(tuple([5,6]))
+# k[0].add(tuple([7,8]))
+# print(k[0].tolist[0])
+
+x = set()
+y = set()
+x.add((1,2))
+y.add((3,4))
+print(x)
+print(y)
+x = x.union(y)
+
+print(x)
+print(y)
+

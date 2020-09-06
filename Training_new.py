@@ -69,7 +69,8 @@ class Agent:
             self.edgeCountInfo.append(0)
         self.featureUpdate = []
         for i in range(num_agent): 
-            self.featureUpdate.append([])
+            j = set()
+            self.featureUpdate.append(j)
 
 node_ALL = []
 edge_ALL = {}
@@ -142,20 +143,20 @@ def update_info():
     for u in range(num_agent):
         for give in agent_ALL:
             for receive in agent_ALL:
-                if receive.currnode in node_ALL[give.currnode].in_commu_range and give != receive:
-                    for infomation in give.featureUpdate[receive.num]:
-                        feat = infomation[0]
-                        edge = infomation[1]
-                        content = infomation[2]
-                        if feat == 0:  receive.edgeLengthInfo[edge] = content
+                if receive.currnode in node_ALL[give.currnode].in_commu_range and give.num != receive.num:
+                    for infomation in set(give.featureUpdate[receive.num]):
+                        feat, edge = infomation
+                        if feat == 0:  receive.edgeLengthInfo[edge] = give.edgeLengthInfo[edge]
                         if feat == 1:  
-                            if receive.edgeTotalConnectInfo[edge] < content: receive.edgeTotalConnectInfo[edge] = content
+                            if receive.edgeTotalConnectInfo[edge] < give.edgeTotalConnectInfo[edge]: 
+                                receive.edgeTotalConnectInfo[edge] = give.edgeTotalConnectInfo[edge]
                         if feat == 2:  
-                            if receive.edgeCountInfo[edge] < content: receive.edgeCountInfo[edge] = content
+                            if receive.edgeCountInfo[edge] < give.edgeCountInfo[edge]: 
+                                receive.edgeCountInfo[edge] = give.edgeCountInfo[edge]
                     for i in range(num_agent): 
-                        if i != give.num and i != receive.num: receive.featureUpdate[i] += give.featureUpdate[receive.num]
+                        if i != give.num and i != receive.num: receive.featureUpdate[i] = receive.featureUpdate[i].union(give.featureUpdate[receive.num])
                     give.featureUpdate[receive.num].clear()
-                elif give == receive: give.featureUpdate[receive.num].clear()
+                elif give.num == receive.num: give.featureUpdate[receive.num].clear()
 
 model = DQN(nfeat=num_feature)
 model.load_state_dict(torch.load(lists))  #retrain
@@ -185,14 +186,14 @@ class Replay_buffer():
 
 buffer = Replay_buffer(1000)
 batch_size = 32
-epsilon = 0.3  #
+epsilon = 0.1  #
 epsilon_decay = 0.0002  #
 epsilon_f = 0.1
 updateTargetModeltick = 0
 updateTargetModelthres = 10
 BatchTrainTick = 0
 BatchTrainThres = 300
-testtime = 100
+testtime = 20
 
 def pick_edge(ag):
     global BatchTrainTick
@@ -270,7 +271,7 @@ def walking(ag):
         edge_ALL[find_edge(ag.currnode_ori, ag.togonode)].ox = 'o'
         ag.edgeLengthInfo[edge_ALL[ag.togoedge].number] = ag.curedge_length
         ag.alreadyVisitInfo[edge_ALL[ag.togoedge].number] = 1
-        for i in range(num_agent): ag.featureUpdate[i].append([0, edge_ALL[ag.togoedge].number, ag.curedge_length])
+        for i in range(num_agent): ag.featureUpdate[i].add(tuple([0, edge_ALL[ag.togoedge].number]))
     ag.currnode = ag.togonode
     ag.currnode_ori = ag.togonode
     ag.lastedge = ag.togoedge
@@ -288,11 +289,11 @@ def walking(ag):
         ag.edgeTotalConnectInfo[head] = sum(ag.edgeTotalConnectMap[head])
         ag.edgeTotalConnectInfo[tail] = sum(ag.edgeTotalConnectMap[tail])
         for i in range(num_agent): 
-            ag.featureUpdate[i].append([1, head, ag.edgeTotalConnectInfo[head]])
-            ag.featureUpdate[i].append([1, tail, ag.edgeTotalConnectInfo[tail]])
-    edge_ALL[find_edge(ag.currnode_ori, ag.togonode)].count += 1
-    ag.edgeCountInfo[edge_ALL[ag.togoedge].number] = edge_ALL[find_edge(ag.currnode_ori, ag.togonode)].count
-    for i in range(num_agent): ag.featureUpdate[i].append([2, edge_ALL[ag.togoedge].number, edge_ALL[find_edge(ag.currnode_ori, ag.togonode)].count])
+            ag.featureUpdate[i].add(tuple([1, head]))
+            ag.featureUpdate[i].add(tuple([1, tail]))
+    edge_ALL[ag.togoedge].count += 1
+    ag.edgeCountInfo[edge_ALL[ag.togoedge].number] = edge_ALL[ag.togoedge].count
+    for i in range(num_agent): ag.featureUpdate[i].add(tuple([2, edge_ALL[ag.togoedge].number]))
 
 def initialize():
     global BatchTrainTick, buffer
@@ -328,7 +329,8 @@ def initialize():
             a.edgeCountInfo.append(0)
         a.featureUpdate = []
         for i in range(num_agent): 
-            a.featureUpdate.append([])
+            j = set()
+            a.featureUpdate.append(j)
 
 while epsilon > epsilon_f:
     initialize()
@@ -344,8 +346,8 @@ while epsilon > epsilon_f:
             if ag.step > ag.curedge_length/2:
                 node_ALL[ag.currnode].all_ag_here.remove(ag.num)       
                 ag.currnode = ag.togonode
-                update_info()
                 node_ALL[ag.currnode].all_ag_here.append(ag.num)
+                update_info()
 
 for te in range(testtime): 
     initialize()
@@ -362,8 +364,8 @@ for te in range(testtime):
             if ag.step > ag.curedge_length/2:
                 node_ALL[ag.currnode].all_ag_here.remove(ag.num)       
                 ag.currnode = ag.togonode
-                update_info()
                 node_ALL[ag.currnode].all_ag_here.append(ag.num)
+                update_info()
         cost += maxspeed
     print("Testtime: ", te, "Cost: ", cost)
     torch.save(model.state_dict(), lists)
