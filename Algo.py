@@ -115,7 +115,6 @@ def initialize():
         a.cost = 0
         a.historyaction = []
 
-
 initialize()                                 
 while not all(edge_ALL[r].ox == 'o' for r in edge_ALL) :
     for ag in agent_ALL:
@@ -123,12 +122,12 @@ while not all(edge_ALL[r].ox == 'o' for r in edge_ALL) :
         ag.cost += ag.speed
         while ag.curedge_length <= ag.step:  walking(ag)
     Cost += maxspeed
+
 # Write all action to file
 fileforHistoryaction = "Animation/Algo_"+ str(num_node) +".txt"
 f = open(fileforHistoryaction, "w")
 print(num_node, file = f)
 for i in agent_ALL: print(i.historyaction, file = f)
-
 
 allEdgeCost = 0
 for i in edge_ALL:   allEdgeCost += edge_ALL[i].distance

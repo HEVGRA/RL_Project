@@ -1,0 +1,8 @@
+_3f_NewEdgeCon_2's feature
+    r1 = -1   
+    if(edge_ALL[find_edge(ag.togonode,outputnum)].ox == 'o'): r1 = 1 #有無走過
+    r3 = X[outputnum][2]           #被走幾次
+    r5 = X[outputnum][1]
+    coe_r3 = max(7*(1-len(ag.historyaction)/(num_edge)),5)
+    coe_r5 = 2
+    R = 0 - r1*4 - r3*coe_r3 - (10-r5)*coe_r5
