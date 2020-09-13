@@ -5,7 +5,7 @@ import time
 
 # tStart = time.time()
 
-file = open('Data\data_10.txt', 'r', encoding='UTF-8') 
+file = open('Data\data_20.txt', 'r', encoding='UTF-8') 
 line = file.readlines()
 
 num_node = int(line[0])

@@ -139,17 +139,23 @@ def update_info():
         for give in agent_ALL:
             for receive in agent_ALL:
                 if receive.currnode in node_ALL[give.currnode].in_commu_range and give.num != receive.num:
+                    j = set()
                     for infomation in set(give.featureUpdate[receive.num]):
                         feat, edge = infomation
-                        if feat == 0:  receive.edgeLengthInfo[edge] = give.edgeLengthInfo[edge]
+                        if feat == 0:  
+                            if receive.edgeLengthInfo[edge] == 0:
+                                receive.edgeLengthInfo[edge] = give.edgeLengthInfo[edge]
+                                j.add(infomation)
                         if feat == 1:  
                             if receive.edgeTotalConnectInfo[edge] < give.edgeTotalConnectInfo[edge]: 
                                 receive.edgeTotalConnectInfo[edge] = give.edgeTotalConnectInfo[edge]
+                                j.add(infomation)
                         if feat == 2:  
                             if receive.edgeCountInfo[edge] < give.edgeCountInfo[edge]: 
                                 receive.edgeCountInfo[edge] = give.edgeCountInfo[edge]
+                                j.add(infomation)
                     for i in range(num_agent): 
-                        if i != give.num and i != receive.num: receive.featureUpdate[i] = receive.featureUpdate[i].union(give.featureUpdate[receive.num])
+                        if i != give.num and i != receive.num: receive.featureUpdate[i] = receive.featureUpdate[i].union(j)
                     give.featureUpdate[receive.num].clear()
                 elif give.num == receive.num: give.featureUpdate[receive.num].clear()
 
