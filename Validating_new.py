@@ -14,7 +14,7 @@ from PIL import ImageFont
 from sklearn import preprocessing
 from collections import namedtuple
 
-file = open('Data\data_10.txt', 'r', encoding='UTF-8') 
+file = open('Data\data_20.txt', 'r', encoding='UTF-8') 
 line = file.readlines()
 
 num_node = int(line[0])
@@ -23,9 +23,9 @@ num_agent = int(line[num_node + num_edge + 2])
 constraint = int(line[num_node + num_edge + num_agent + 3])
 maxspeed = 0 
 Cost = 0
-lists = "Model\_3f_NewEdgeCon"
+# lists = "Model\_3f_NewEdgeCon"
 # lists = "Model\_3f_NewEdgeCon_2"
-# lists = "Model\saved_"
+lists = "Model\saved_"
 
 class Node:
     def __init__(self, pos, number):
@@ -210,7 +210,6 @@ def walking(ag):
 
 k = 10000
 while not all(edge_ALL[r].ox == 'o' for r in edge_ALL):
-    if Cost > 100000: break
     for ag in agent_ALL:
         ag.step += ag.speed
         ag.cost += ag.speed

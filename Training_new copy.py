@@ -22,7 +22,7 @@ num_edge = int(line[1])
 num_agent = int(line[num_node + num_edge + 2])
 constraint = int(line[num_node + num_edge + num_agent + 3])
 maxspeed = 0 
-cost = 0
+trainingloss = 0
 lists = "Model\saved_"
 
 class Node:
@@ -55,19 +55,17 @@ class Agent:
         self.reward = 0
         self.start = cur
         self.edgeLengthInfo = []
-        self.alreadyVisitInfo = []
-        self.edgeTotalConnectMap = [[0]*num_edge for i in range(num_edge)]
+        self.edgeTotalConnectMap = []
         self.edgeTotalConnectInfo = []
-        self.totalAgentMap = [[0]*2 for i in range(num_edge)]
-        self.totalAgentInfo = []
         self.edgeCountInfo = []
-        for i in range(num_edge):
-            self.edgeLengthInfo.append(0)
-            self.alreadyVisitInfo.append(0)
-            self.edgeTotalConnectInfo.append(0)
-            self.totalAgentInfo.append(0)
-            self.edgeCountInfo.append(0)
         self.featureUpdate = []
+        for i in range(num_edge):   
+            self.edgeLengthInfo.append(0)
+            self.edgeCountInfo.append(0)
+        for i in range(num_node):   
+            j = set()
+            self.edgeTotalConnectMap.append(j)
+            self.edgeTotalConnectInfo.append(0)
         for i in range(num_agent): 
             j = set()
             self.featureUpdate.append(j)
@@ -128,7 +126,8 @@ def feature_matrix(ag):
         if ag.edgeLengthInfo[ed] != 0:            
             X[k][0] = ag.edgeLengthInfo[ed]
         # 被幾個edge走到
-        X[k][1] = ag.edgeTotalConnectInfo[ed]
+        if ag.edgeTotalConnectInfo[k] != 0: X[k][1] = (ag.edgeTotalConnectInfo[k] - len(ag.edgeTotalConnectMap[k]))/(num_node-1)*10
+        else: X[k][1] = 10
         # 此edge被走過幾次
         X[k][2] = ag.edgeCountInfo[ed]
     X = np.around((X), decimals=3)
@@ -146,7 +145,11 @@ def update_info():
                             if receive.edgeLengthInfo[edge] == 0:
                                 receive.edgeLengthInfo[edge] = give.edgeLengthInfo[edge]
                                 j.add(infomation)
-                        if feat == 1:  
+                        if feat == 11: 
+                            if len(receive.edgeTotalConnectMap[edge]) < num_node-1:
+                                receive.edgeTotalConnectMap[edge] = receive.edgeTotalConnectMap[edge].union(give.edgeTotalConnectMap[edge])
+                                j.add(infomation)
+                        if feat == 12:  
                             if receive.edgeTotalConnectInfo[edge] < give.edgeTotalConnectInfo[edge]: 
                                 receive.edgeTotalConnectInfo[edge] = give.edgeTotalConnectInfo[edge]
                                 j.add(infomation)
@@ -164,7 +167,7 @@ model.load_state_dict(torch.load(lists))  #retrain
 model_target = DQN(nfeat=num_feature)
 model_target.load_state_dict(model.state_dict())
 loss_fn = nn.MSELoss()
-optimizer = optim.Adam(model.parameters(),lr=0.0002)    #
+optimizer = optim.Adam(model.parameters(),lr=0.00005)    #
 replay = namedtuple('replay',('nextnode','state','action','reward','next_state'))
 class Replay_buffer():
     def __init__(self , buffer_size):
@@ -186,49 +189,88 @@ class Replay_buffer():
         self.cur_size = 0
 
 buffer = Replay_buffer(1000)
-batch_size = 32
-epsilon = 0.1  #
-epsilon_decay = 0.0002  #
-epsilon_f = 0.1
+batch_size = 64
 updateTargetModeltick = 0
 updateTargetModelthres = 10
 BatchTrainTick = 0
-BatchTrainThres = 300
-testtime = 30
+BatchTrainThres = 200
+testtime = 100
+
+def repick(ag, X):
+    # print(X)
+    for i in range(num_node):
+        if X[i][2] == 0 and i in node_ALL[ag.currnode].connected_node:
+            r1 = -1   
+            if(edge_ALL[find_edge(ag.togonode,i)].ox == 'o'): r1 = 1 
+            r3 = X[i][2]
+            r5 = X[i][1]
+            coe_r3 = max(7*(1-len(ag.historyaction)/(num_edge)),5)
+            coe_r5 = 2
+            R = 0 - r1*4 - r3*coe_r3 - (10-r5)*coe_r5
+            X_target = X
+            X_target[i][2] += 1
+            if ag.currnode not in ag.edgeTotalConnectMap[i] and X_target[i][1] != 10: 
+                X_target[i][1] = (ag.edgeTotalConnectInfo[i]-len(ag.edgeTotalConnectMap[i])-1)/(num_node-1)*10
+            elif ag.currnode not in ag.edgeTotalConnectMap[i] and X_target[i][1] == 10:
+                X_target[i][1] = (len(node_ALL[i].connected_node)-1)/(num_node-1)*10
+            return i, i, R, X_target
+    maxnum = -1
+    maxi = -1
+    for i in range(num_node):
+        if i in node_ALL[ag.currnode].connected_node and X[i][1] > maxnum:
+            maxnum = X[i][1]
+            maxi = i
+    r1 = -1   
+    if(edge_ALL[find_edge(ag.togonode,maxi)].ox == 'o'): r1 = 1 
+    r3 = X[maxi][2]
+    r5 = X[maxi][1]
+    coe_r3 = max(7*(1-len(ag.historyaction)/(num_edge)),5)
+    coe_r5 = 2
+    R2 = 0 - r1*4 - r3*coe_r3 - (10-r5)*coe_r5
+    X_target = X
+    X_target[maxi][2] += 1
+    if ag.currnode not in ag.edgeTotalConnectMap[maxi] and X_target[maxi][1] != 10: 
+        X_target[maxi][1] = (ag.edgeTotalConnectInfo[maxi]-len(ag.edgeTotalConnectMap[maxi])-1)/(num_node-1)*10
+    elif ag.currnode not in ag.edgeTotalConnectMap[maxi] and X_target[maxi][1] == 10:
+        X_target[maxi][1] = (len(node_ALL[maxi].connected_node)-1)/(num_node-1)*10
+    return maxi, maxi, R2, X_target
 
 def pick_edge(ag):
     global BatchTrainTick
     X = feature_matrix(ag)
-    #Q (state)
     output = model(torch.from_numpy(X))
     outputnum = -1
     outputmax = -math.inf
-    global epsilon, epsilon_f
-    Eps = random.uniform(0, 1)
-    if Eps > epsilon:
-        for i in range(num_node):
-            if output[i] >= outputmax and i in node_ALL[ag.togonode].connected_node:
-                outputmax = output[i]
-                outputnum = i
-    else: 
-        outputnum = random.choices(node_ALL[ag.togonode].connected_node)[0]
+    for i in range(num_node):
+        if output[i] >= outputmax and i in node_ALL[ag.togonode].connected_node:
+            outputmax = output[i]
+            outputnum = i
 
-    #Q target (next state)
-    X_target = X
-    X_target[outputnum][2] += 1 
+    # if 1 < 0: a = 2
+    if edge_ALL[find_edge(ag.togonode,outputnum)].count > 0:
+        A, C, D, E = repick(ag, X)
+        # experience = replay(outputnum, X, outputnum, R, X_target)
+        experience = replay(A, X, C, D, E)
+        buffer.push(experience)
+    else:
+        X_target = X
+        X_target[outputnum][2] += 1
+        if ag.currnode not in ag.edgeTotalConnectMap[outputnum] and X_target[outputnum][1] != 10: 
+            X_target[outputnum][1] = (ag.edgeTotalConnectInfo[outputnum]-len(ag.edgeTotalConnectMap[outputnum])-1)/(num_node-1)*10
+        elif ag.currnode not in ag.edgeTotalConnectMap[outputnum] and X_target[outputnum][1] == 10:
+            X_target[outputnum][1] = (len(node_ALL[outputnum].connected_node)-1)/(num_node-1)*10
+        #Computing reward
+        r1 = -1   
+        if(edge_ALL[find_edge(ag.togonode,outputnum)].ox == 'o'): r1 = 1 #有無走過
+        r3 = X[outputnum][2]           #被走幾次
+        r5 = X[outputnum][1]
+        coe_r3 = max(7*(1-len(ag.historyaction)/(num_edge)),5)
+        coe_r5 = 2
+        R = 0 - r1*4 - r3*coe_r3 - (10-r5)*coe_r5
+        #store to buffer
+        experience = replay(outputnum, X, outputnum, R, X_target)
+        buffer.push(experience)
 
-    #Computing reward
-    r0 = len(ag.historyaction) #時間越久reward越少
-    r1 = -1   
-    if(edge_ALL[find_edge(ag.togonode,outputnum)].ox == 'o'): r1 = 1 #有無走過
-    r3 = edge_ALL[find_edge(ag.togonode,outputnum)].count           #被走幾次
-    r4 = int(edge_ALL[find_edge(ag.togonode,outputnum)].distance/50)
-    # R = -r0 - r1*3 - r3*5 - r4
-    R = 0 - r1*4 - r3*6 - r4
-
-    #store to buffer
-    experience = replay(outputnum, X, outputnum, R, X_target)
-    buffer.push(experience)
     #select batch and training
     if buffer.cur_size >= batch_size:
         batch = buffer.sample(batch_size=batch_size)
@@ -260,19 +302,18 @@ def pick_edge(ag):
         if(updateTargetModeltick >= updateTargetModelthres):
             updateTargetModeltick = 0
             model_target.load_state_dict(model.state_dict())
-        if epsilon-0.001 > epsilon_f : epsilon -= epsilon_decay
-        else: epsilon = epsilon_f
-    
-        if ag.num == 0: print(BatchTrainTick, "Reward: ", R, ", Loss: ", loss, epsilon)
-
+        global trainingloss
+        trainingloss = loss
+        # if ag.num == 0: print(BatchTrainTick)
     return outputnum
   
 def walking(ag):
     if ag.currnode_ori != ag.togonode : 
+        #edge lengh feature
         edge_ALL[find_edge(ag.currnode_ori, ag.togonode)].ox = 'o'
         ag.edgeLengthInfo[edge_ALL[ag.togoedge].number] = ag.curedge_length
-        ag.alreadyVisitInfo[edge_ALL[ag.togoedge].number] = 1
         for i in range(num_agent): ag.featureUpdate[i].add(tuple([0, edge_ALL[ag.togoedge].number]))
+    #choose togoedge
     ag.currnode = ag.togonode
     ag.currnode_ori = ag.togonode
     ag.lastedge = ag.togoedge
@@ -282,21 +323,19 @@ def walking(ag):
     togo_edge = find_edge(ag.currnode, ag.togonode)
     ag.curedge_length = edge_ALL[togo_edge].distance
     ag.togoedge = togo_edge
-    if ag.lastedge != ag.togoedge and ag.lastedge != 0:
-        head = edge_ALL[ag.lastedge].number
-        tail = edge_ALL[ag.togoedge].number
-        ag.edgeTotalConnectMap[head][tail] = 1
-        ag.edgeTotalConnectMap[tail][head] = 1
-        ag.edgeTotalConnectInfo[head] = sum(ag.edgeTotalConnectMap[head])
-        ag.edgeTotalConnectInfo[tail] = sum(ag.edgeTotalConnectMap[tail])
-        for i in range(num_agent): 
-            ag.featureUpdate[i].add(tuple([1, head]))
-            ag.featureUpdate[i].add(tuple([1, tail]))
+    #edge count feature
     edge_ALL[ag.togoedge].count += 1
     ag.edgeCountInfo[edge_ALL[ag.togoedge].number] = edge_ALL[ag.togoedge].count
     for i in range(num_agent): ag.featureUpdate[i].add(tuple([2, edge_ALL[ag.togoedge].number]))
+    #edge connect feature
+    ag.edgeTotalConnectMap[ag.currnode_ori].update({ag.togonode})
+    ag.edgeTotalConnectMap[ag.togonode].update({ag.currnode_ori})
+    for i in range(num_agent): ag.featureUpdate[i].add(tuple([11, ag.currnode_ori]))
+    for i in range(num_agent): ag.featureUpdate[i].add(tuple([11, ag.togonode]))
+    ag.edgeTotalConnectInfo[ag.currnode] = len(node_ALL[ag.currnode].connected_node)
+    for i in range(num_agent): ag.featureUpdate[i].add(tuple([12, ag.currnode]))
 
-    if edge_ALL[togo_edge].ox == 'o': ag.historyaction.append('#')
+    # if edge_ALL[togo_edge].count >= 2: ag.historyaction.append('#')
 
 def initialize():
     global BatchTrainTick, buffer
@@ -318,40 +357,22 @@ def initialize():
         a.reward = 0
         a.historyaction = []
         a.edgeLengthInfo = []
-        a.alreadyVisitInfo = []
-        a.edgeTotalConnectMap = [[0]*num_edge for i in range(num_edge)]
+        a.edgeTotalConnectMap = []
         a.edgeTotalConnectInfo = []
-        a.totalAgentInfo = []
-        a.totalAgentMap = [[0]*2 for i in range(num_edge)]
         a.edgeCountInfo = []
-        for i in range(num_edge):
-            a.edgeLengthInfo.append(0)
-            a.alreadyVisitInfo.append(0)
-            a.totalAgentInfo.append(0)
-            a.edgeTotalConnectInfo.append(0)
-            a.edgeCountInfo.append(0)
         a.featureUpdate = []
+        for i in range(num_edge):   
+            a.edgeLengthInfo.append(0)
+            a.edgeCountInfo.append(0)
+        for i in range(num_node):   
+            j = set()
+            a.edgeTotalConnectMap.append(j)
+            a.edgeTotalConnectInfo.append(0)
         for i in range(num_agent): 
             j = set()
             a.featureUpdate.append(j)
 
-while epsilon > epsilon_f:
-    initialize()
-    while not all(edge_ALL[r].ox == 'o' for r in edge_ALL):
-        if BatchTrainTick >= BatchTrainThres: break
-        for ag in agent_ALL:
-            ag.step += ag.speed
-            while ag.curedge_length <= ag.step:  
-                update_info()
-                node_ALL[ag.currnode].all_ag_here.remove(ag.num)
-                walking(ag)         
-                node_ALL[ag.currnode].all_ag_here.append(ag.num)
-            if ag.step > ag.curedge_length/2:
-                node_ALL[ag.currnode].all_ag_here.remove(ag.num)       
-                ag.currnode = ag.togonode
-                node_ALL[ag.currnode].all_ag_here.append(ag.num)
-                update_info()
-
+k = 10000
 for te in range(testtime): 
     initialize()
     cost = 0
@@ -370,6 +391,9 @@ for te in range(testtime):
                 node_ALL[ag.currnode].all_ag_here.append(ag.num)
                 update_info()
         cost += maxspeed
+        if cost > k:
+            print(cost)
+            k += 10000
     print("Testtime: ", te, "Cost: ", cost)
     for i in agent_ALL: print(i.historyaction)
     torch.save(model.state_dict(), lists)

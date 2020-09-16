@@ -197,7 +197,7 @@ updateTargetModeltick = 0
 updateTargetModelthres = 10
 BatchTrainTick = 0
 BatchTrainThres = 200
-testtime = 50
+testtime = 30
 
 def pick_edge(ag):
     global BatchTrainTick
@@ -219,19 +219,20 @@ def pick_edge(ag):
     #Q target (next state)
     X_target = X
     X_target[outputnum][2] += 1
-    # if ag.currnode not in ag.edgeTotalConnectMap[outputnum] and X_target[outputnum][1] != 10: 
-    #     X_target[outputnum][1] = (ag.edgeTotalConnectInfo[outputnum]-len(ag.edgeTotalConnectMap[outputnum])-1)/(num_node-1)*10
+    if ag.currnode not in ag.edgeTotalConnectMap[outputnum] and X_target[outputnum][1] != 10: 
+        X_target[outputnum][1] = (ag.edgeTotalConnectInfo[outputnum]-len(ag.edgeTotalConnectMap[outputnum])-1)/(num_node-1)*10
+    elif ag.currnode not in ag.edgeTotalConnectMap[outputnum] and X_target[outputnum][1] == 10:
+        X_target[outputnum][1] = (len(node_ALL[outputnum].connected_node)-1)/(num_node-1)*10
 
     #Computing reward
     r1 = -1   
     if(edge_ALL[find_edge(ag.togonode,outputnum)].count > 0): r1 = 1 #有無走過
     r3 = edge_ALL[find_edge(ag.togonode,outputnum)].count           #被走幾次
     r5 = X[outputnum][1]
-    coe_r3 = 7
+    coe_r3 = 6
     # coe_r5 = min(2*len(ag.historyaction)/int((num_edge/3)),2)
     coe_r5 = 3
-    # R = 0 - r1*6 - (5-r5)*coe_r5
-    R = 0 - r1*4 - r3*coe_r3
+    R = 0 - r1*6 - (5-r5)*coe_r5
 
     #store to buffer
     experience = replay(outputnum, X, outputnum, R, X_target)
