@@ -1,7 +1,7 @@
 import random
 import numpy as np
 
-node = 20
+node = 40
 edge = int(node*(node-1)/2 - min(3,int(node*(node-1)/12)))
 # edge = int(node*(node-1)/2/2)
 agent = 3
