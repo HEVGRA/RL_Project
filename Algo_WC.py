@@ -14,7 +14,7 @@ from PIL import ImageFont
 from sklearn import preprocessing
 from collections import namedtuple
 
-file = open('Data\data_50.txt', 'r', encoding='UTF-8') 
+file = open('Data\data_10.txt', 'r', encoding='UTF-8') 
 line = file.readlines()
 
 num_node = int(line[0])
@@ -23,10 +23,6 @@ num_agent = int(line[num_node + num_edge + 2])
 constraint = int(line[num_node + num_edge + num_agent + 3])
 maxspeed = 0 
 Cost = 0
-# lists = "Model\_3f_dist_no"
-# lists = "Model\_3f_dist_1"
-lists = "Model\_3f_dist_2"
-# lists = "Model\saved_"
 
 class Node:
     def __init__(self, pos, number):

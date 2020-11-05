@@ -14,7 +14,7 @@ from PIL import ImageFont
 from sklearn import preprocessing
 from collections import namedtuple
 
-file = open('Data\data_40.txt', 'r', encoding='UTF-8') 
+file = open('Data\data_10.txt', 'r', encoding='UTF-8') 
 line = file.readlines()
 
 num_node = int(line[0])

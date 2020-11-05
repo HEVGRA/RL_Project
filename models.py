@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-class DQN(nn.Module): #Shallow QN
+class DQN(nn.Module):
     def __init__(self, nfeat):
         super(DQN, self).__init__()
         self.L1 = nn.Linear(nfeat, 1024)
@@ -31,3 +31,5 @@ class DQN(nn.Module): #Shallow QN
         x = F.relu(self.L10(x))
         x = self.out(x)
         return x
+
+
