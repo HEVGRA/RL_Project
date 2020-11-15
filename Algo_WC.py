@@ -14,7 +14,8 @@ from PIL import ImageFont
 from sklearn import preprocessing
 from collections import namedtuple
 
-file = open('Data\data_10.txt', 'r', encoding='UTF-8') 
+num_node = 10
+file = open("Data\data_" + str(num_node) + ".txt", 'r', encoding='UTF-8') 
 line = file.readlines()
 
 num_node = int(line[0])
@@ -216,7 +217,7 @@ while not all(edge_ALL[r].ox == 'o' for r in edge_ALL):
 
 
 # Write all action to file
-fileforHistoryaction = "Animation/RL_"+ str(num_node) +".txt"
+fileforHistoryaction = "Animation/Algo_WC_"+ str(num_node) +".txt"
 f = open(fileforHistoryaction, "w")
 print(num_node, file = f)
 for i in agent_ALL: print(i.historyaction, file = f)

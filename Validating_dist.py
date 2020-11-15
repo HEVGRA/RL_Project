@@ -14,7 +14,8 @@ from PIL import ImageFont
 from sklearn import preprocessing
 from collections import namedtuple
 
-file = open('Data\data_10.txt', 'r', encoding='UTF-8') 
+num_node = 10
+file = open("Data\data_" + str(num_node) + ".txt", 'r', encoding='UTF-8') 
 line = file.readlines()
 
 num_node = int(line[0])
@@ -239,7 +240,7 @@ for i in agent_ALL:   allAgentCost += i.cost
 all_historyaction = -num_agent
 for i in agent_ALL:  all_historyaction += len(i.historyaction)
 
-# for i in agent_ALL:   print(i.historyaction)
+for i in agent_ALL:   print(i.historyaction)
 print("Map cost = ",allEdgeCost)
 print("All agents' cost = ",allAgentCost)
 print("Repeated rate = ","%.2f"%((all_historyaction-num_edge)/all_historyaction*100),"%")                      

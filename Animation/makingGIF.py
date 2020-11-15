@@ -3,13 +3,14 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from matplotlib.animation import FuncAnimation
 import math
- 
-file_Algo = open('Animation\Algo_10.txt', 'r', encoding='UTF-8') 
+
+num_node = 10
+
+# file_Algo = open("Animation\Algo_" + str(num_node) + ".txt", 'r', encoding='UTF-8') 
+file_Algo = open("Animation\Algo_WC_" + str(num_node) + ".txt", 'r', encoding='UTF-8') 
 line_Algo = file_Algo.readlines()
 
-num_node = int(line_Algo[0])
-lists_RL = "Animation\RL_" + str(num_node) + ".txt"
-file_RL = open(lists_RL, 'r', encoding='UTF-8')
+file_RL = open("Animation\RL_" + str(num_node) + ".txt", 'r', encoding='UTF-8')
 line_RL = file_RL.readlines()
 
 lists = "Data\data_" + str(num_node) + ".txt"
@@ -106,7 +107,6 @@ for i in agent_ALL:
         i.y.append(node_ALL[k].pos[1])
         if j < (len(i.historyaction)-1):
             i.distance.append(edge_ALL[find_edge(i.historyaction[j],i.historyaction[j+1])].distance)
-
 for i in agent_ALL: 
     allstep = len(i.historyaction)
     for j in i.distance: allstep += math.ceil(j/i.speed)
