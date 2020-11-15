@@ -5,7 +5,7 @@ import time
 
 # tStart = time.time()
 
-num_node = 10
+num_node = 30
 file = open("Data\data_" + str(num_node) + ".txt", 'r', encoding='UTF-8') 
 line = file.readlines()
 

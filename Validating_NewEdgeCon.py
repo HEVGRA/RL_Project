@@ -14,7 +14,7 @@ from PIL import ImageFont
 from sklearn import preprocessing
 from collections import namedtuple
 
-num_node = 10
+num_node = 30
 file = open("Data\data_" + str(num_node) + ".txt", 'r', encoding='UTF-8') 
 line = file.readlines()
 
@@ -25,7 +25,7 @@ constraint = int(line[num_node + num_edge + num_agent + 3])
 maxspeed = 0 
 Cost = 0
 lists = "Model\_3f_NewEdgeCon"
-lists = "Model\_3f_NewEdgeCon_2"
+# lists = "Model\_3f_NewEdgeCon_2"
 # lists = "Model\saved_"
 
 class Node:
@@ -230,7 +230,7 @@ while not all(edge_ALL[r].ox == 'o' for r in edge_ALL):
         k += 10000
 
 # Write all action to file
-fileforHistoryaction = "Animation/RL_"+ str(num_node) +".txt"
+fileforHistoryaction = "Animation/RL_newedgecon_"+ str(num_node) +".txt"
 f = open(fileforHistoryaction, "w")
 print(num_node, file = f)
 for i in agent_ALL: print(i.historyaction, file = f)
@@ -242,7 +242,7 @@ for i in agent_ALL:   allAgentCost += i.cost
 all_historyaction = -num_agent
 for i in agent_ALL:  all_historyaction += len(i.historyaction)
 
-for i in agent_ALL:   print(i.historyaction)
+# for i in agent_ALL:   print(i.historyaction)
 print("Map cost = ",allEdgeCost)
 print("All agents' cost = ",allAgentCost)
 print("Repeated rate = ","%.2f"%((all_historyaction-num_edge)/all_historyaction*100),"%")                      

@@ -4,7 +4,7 @@ import matplotlib.animation as animation
 from matplotlib.animation import FuncAnimation
 import math
 
-num_node = 10
+num_node = 7
 
 # file_Algo = open("Animation\Algo_" + str(num_node) + ".txt", 'r', encoding='UTF-8') 
 file_Algo = open("Animation\Algo_WC_" + str(num_node) + ".txt", 'r', encoding='UTF-8') 
